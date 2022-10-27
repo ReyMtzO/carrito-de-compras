@@ -3,43 +3,43 @@ const items = document.getElementById('items')
 const footer = document.getElementById('footer')
 const templateCard = document.getElementById('template-card').content
 const templateFooter = document.getElementById('template-footer').content
-const templateCarrito = document.getElementById('template-carrito').content
+const templateShoppingCart = document.getElementById('template-shopping-cart').content
 const fragment = document.createDocumentFragment()
-let carrito = {}
+let shoppingCart = {}
 
 // Eventos
 // El evento DOMContentLoaded es disparado cuando el documento HTML ha sido completamente cargado y parseado
 document.addEventListener('DOMContentLoaded', () => { 
     fetchData() 
-    if(localStorage.getItem('carrito')) {
-        carrito = JSON.parse(localStorage.getItem('carrito'))
-        pintarCarrito()
+    if(localStorage.getItem('articles_mock')) {
+        shoppingCart = JSON.parse(localStorage.getItem('articles_mock'))
+        showCart()
     }
 })
 
 cards.addEventListener('click', e => {
-     addCarrito(e) 
+     addToCart(e) 
 })
 
 items.addEventListener('click', e => {
-     btnAumentarDisminuir(e) 
+     btnAddOrReduce(e) 
 })
 
 // Traer productos
 const fetchData = async () => {
-    const res = await fetch('api.json');
+    const res = await fetch('articles_mock.json');
     const data = await res.json()
     // console.log(data)
-    pintarCards(data)
+    showCards(data)
 }
 
 // Pintar productos
-const pintarCards = data => {
-	data.forEach(producto => {
-		templateCard.querySelector('h5').textContent = producto.title 
-		templateCard.querySelector('p').textContent = producto.precio
-		templateCard.querySelector('img').setAttribute("src", producto.thumbnailUrl)
-		templateCard.querySelector('.btn-dark').dataset.id = producto.id
+const showCards = data => {
+	data.forEach(product => {
+		templateCard.querySelector('h5').textContent = product.title 
+		templateCard.querySelector('p').textContent = product.price
+		templateCard.querySelector('img').setAttribute("src", product.thumbnailUrl)
+		templateCard.querySelector('.btn-dark').dataset.id = product.id
 
 		const clone = templateCard.cloneNode(true)
 		fragment.appendChild(clone)
@@ -48,101 +48,101 @@ const pintarCards = data => {
 }
 
 // Agregar al carrito
-const addCarrito = e => {
+const addToCart = e => {
     if (e.target.classList.contains('btn-dark')) {
         // console.log(e.target.dataset.id)
         // console.log(e.target.parentElement)
-        setCarrito(e.target.parentElement)
+        setShoppingCart(e.target.parentElement)
     }
     e.stopPropagation()
 }
 
-const setCarrito = item => {
+const setShoppingCart = item => {
     // console.log(item)
-    const producto = {
+    const product = {
         title: item.querySelector('h5').textContent,
-        precio: item.querySelector('p').textContent,
+        price: item.querySelector('p').textContent,
         id: item.querySelector('button').dataset.id,
-        cantidad: 1
+        amount: 1
     }
     // console.log(producto)
-    if (carrito.hasOwnProperty(producto.id)) {
-        producto.cantidad = carrito[producto.id].cantidad + 1
+    if (shoppingCart.hasOwnProperty(product.id)) {
+        product.amount = shoppingCart[product.id].amount + 1
     }
 
-    carrito[producto.id] = { ...producto }
+    shoppingCart[product.id] = { ...product }
     
-    pintarCarrito()
+    showCart()
 }
 
-const pintarCarrito = () => {
+const showCart = () => {
     items.innerHTML = ''
 
-    Object.values(carrito).forEach(producto => {
-        templateCarrito.querySelector('th').textContent = producto.id
-        templateCarrito.querySelectorAll('td')[0].textContent = producto.title
-        templateCarrito.querySelectorAll('td')[1].textContent = producto.cantidad
-        templateCarrito.querySelector('span').textContent = producto.precio * producto.cantidad
+    Object.values(shoppingCart).forEach(product => {
+        templateShoppingCart.querySelector('th').textContent = product.id
+        templateShoppingCart.querySelectorAll('td')[0].textContent = product.title
+        templateShoppingCart.querySelectorAll('td')[1].textContent = product.amount
+        templateShoppingCart.querySelector('span').textContent = product.price * product.amount
         
         //botones
-        templateCarrito.querySelector('.btn-info').dataset.id = producto.id
-        templateCarrito.querySelector('.btn-danger').dataset.id = producto.id
+        templateShoppingCart.querySelector('.btn-info').dataset.id = product.id
+        templateShoppingCart.querySelector('.btn-danger').dataset.id = product.id
 
-        const clone = templateCarrito.cloneNode(true)
+        const clone = templateShoppingCart.cloneNode(true)
         fragment.appendChild(clone)
     })
     items.appendChild(fragment)
 
-    pintarFooter()
+    showFooter()
 
-    localStorage.setItem('carrito', JSON.stringify(carrito))
+    localStorage.setItem('articles_mock', JSON.stringify(shoppingCart))
 }
 
-const pintarFooter = () => {
+const showFooter = () => {
     footer.innerHTML = ''
-    if (Object.keys(carrito).length === 0) {
+    if (Object.keys(shoppingCart).length === 0) {
         footer.innerHTML = `
         <th scope="row" colspan="5">Carrito vacío - comience a comprar!</th>
         `
         return
     }
-    const nCantidad = Object.values(carrito).reduce((acc, { cantidad }) => acc + cantidad, 0)
-    const nPrecio = Object.values(carrito).reduce((acc, {cantidad, precio}) => acc + cantidad * precio, 0)
+    const numberOfItems = Object.values(shoppingCart).reduce((acc, { amount }) => acc + amount, 0)
+    const totalPrice = Object.values(shoppingCart).reduce((acc, {amount, price}) => acc + amount * price, 0)
     
-    templateFooter.querySelectorAll('td')[0].textContent = nCantidad
-    templateFooter.querySelector('span').textContent = nPrecio
+    templateFooter.querySelectorAll('td')[0].textContent = numberOfItems
+    templateFooter.querySelector('span').textContent = totalPrice
 
     const clone = templateFooter.cloneNode(true)
     fragment.appendChild(clone)
     footer.appendChild(fragment)
 
-    const btnVaciar = document.getElementById('vaciar-carrito')
+    const btnVaciar = document.getElementById('empty-cart')
     btnVaciar.addEventListener('click', () => {
-        carrito = {}
-        pintarCarrito()
+        shoppingCart = {}
+        showCart()
     })
 }
 
-const btnAumentarDisminuir = e => {
+const btnAddOrReduce = e => {
     //console.log(e.target)
     //Acción de aumentar
     if(e.target.classList.contains('btn-info')) {
-        //console.log(carrito[e.target.dataset.id])
-       // carrito[e.target.dataset.id]
-       const producto = carrito[e.target.dataset.id]
-       producto.cantidad = carrito[e.target.dataset.id].cantidad + 1 
-       // también funciona usar "producto.cantidad++"
-       carrito[e.target.dataset.id] = {...producto}
-       pintarCarrito()
+        //console.log(shoppingCart[e.target.dataset.id])
+       // shoppingCart[e.target.dataset.id]
+       const product = shoppingCart[e.target.dataset.id]
+       product.amount = shoppingCart[e.target.dataset.id].amount + 1 
+       // también funciona usar "producto.amount++"
+       shoppingCart[e.target.dataset.id] = {...product}
+       showCart()
     }
 
     if(e.target.classList.contains('btn-danger')) {
-       const producto = carrito[e.target.dataset.id]
-       producto.cantidad--
-       if (producto.cantidad === 0) {
-            delete carrito[e.target.dataset.id]
+       const product = shoppingCart[e.target.dataset.id]
+       product.amount--
+       if (product.amount === 0) {
+            delete shoppingCart[e.target.dataset.id]
        }  
-       pintarCarrito()
+       showCart()
     }
     
     e.stopPropagation()
